@@ -1,0 +1,5 @@
+####first enter the virtual environment 
+pipenv shell
+
+### then install the dependencies
+pipenv install python-dotenv flask flask-sqlalchemy flask-migrate flask-cors flask-jwt-extended psycopg2-binary
