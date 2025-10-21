@@ -1,144 +1,283 @@
-# EMAGE Backend — Work Breakout (Kiptoo & Moen)
+EMAGE Backend — Revised Work Division (Kiptoo & Moen)
+This document splits backend responsibilities between Kiptoo and Moen, accounting for expertise differences and creating a more balanced workload.
+General rules
 
-This document splits backend responsibilities between two developers: **Kiptoo** and **Moen**. Use this as a sprint planning guide, PR checklist, and onboarding reference.
+Work in feature branches: feat/<owner>/<short-desc>
+Create small PRs (<= 300 lines) and link to an issue
+Assign the other developer as reviewer
+Use conventional commits: type(scope): subject
 
-## General rules
-- Work in feature branches: `feat/<owner>/<short-desc>` (e.g., `feat/kiptoo/auth-refresh`).
-- Create small PRs (<= 300 lines) and link to an issue.
-- Assign the other developer as reviewer.
-- Use conventional commits: `type(scope): subject`.
 
----
-
-## Primary areas and owners
-
-### 1) Authentication & Authorization
-**Owner:** Kiptoo (primary), Moen (backup/review)
-
+Primary areas and owners
+1) Authentication & Authorization
+Owner: Kiptoo (solo for JWT implementation)
 Tasks:
-- Implement secure login/logout flows and JWT handling in `app/routes/auth.py` and `app/middleware/auth.py`.
-- Harden password hashing and add rate-limiting hooks.
-- Implement refresh token logic with proper expiry.
-- Write unit tests for auth middleware and route handlers.
+
+Implement secure login/logout flows and JWT handling in app/routes/auth.py
+Build JWT middleware in app/middleware/auth.py (token validation, expiry checks)
+Implement refresh token logic with proper expiry
+Add password hashing and rate-limiting hooks
+Write comprehensive unit tests for auth middleware and route handlers
+Document JWT flow for Moen's reference
 
 Acceptance criteria:
-- All auth endpoints use JWT; middleware rejects invalid/expired tokens; tests pass.
 
-### 2) Database & Models
-**Owner:** Moen (primary), Kiptoo (backup/review)
+All auth endpoints use JWT
+Middleware rejects invalid/expired tokens
+Tests pass with >80% coverage
+Brief JWT explanation doc for team
 
+Timeline: Days 1-5 (critical path)
+
+2) Database & Models
+Owner: Moen (primary), Kiptoo (review)
 Tasks:
-- Ensure `app/db.py` manages connections and sessions correctly.
-- Update models in `app/models/` (journal.py, mood.py, user.py) with constraints and serialization helpers.
-- Add and test Alembic migrations under `migrations/`.
+
+Set up app/db.py with connection pooling and session management
+Create base models in app/models/ (user.py, journal.py, mood.py)
+Add constraints, indexes, and serialization helpers (to_dict methods)
+Initialize Alembic and create initial migrations under migrations/
+Test migrations on clean dev DB
 
 Acceptance criteria:
-- Migrations apply cleanly; model tests pass and map to DB schema.
 
-### 3) Journals & Mood Feature Endpoints
-**Owners:**
-- Journals — Kiptoo (primary)
-- Mood — Moen (primary)
+Migrations apply cleanly on fresh DB
+All models have proper relationships and constraints
+Model tests pass (basic CRUD)
 
-Tasks (Journals — Kiptoo):
-- Complete CRUD endpoints in `app/routes/journals.py`.
-- Add request validation, pagination, and permission checks.
-- Unit & integration tests.
+Timeline: Days 1-4 (parallel with auth)
 
-Tasks (Mood — Moen):
-- Complete endpoints in `app/routes/mood.py` and `app/models/mood.py`.
-- Implement aggregation endpoints for weekly/monthly mood stats.
-- Tests for aggregation and edge cases.
-
-Acceptance criteria:
-- Endpoints documented, tested, and validated by the other developer.
-
-### 4) Dashboard & Aggregations
-**Owner:** Moen (primary), Kiptoo (support)
-
+3) Journals Feature
+Owner: Kiptoo (full ownership)
 Tasks:
-- Implement `app/routes/dashboard.py` to aggregate journals and mood data.
-- Optimize queries and add simple caching if necessary.
+
+Complete CRUD endpoints in app/routes/journals.py
+Add request validation (Flask-Marshmallow or Pydantic)
+Implement pagination and filtering (by date, tags)
+Add permission checks (users can only access their journals)
+Write unit and integration tests
 
 Acceptance criteria:
-- Dashboard endpoints return aggregated results with acceptable latency in dev.
 
-### 5) API Stability, Error Handling & Middleware
-**Owners:** Both (split and review each other's middleware)
+All journal endpoints documented and tested
+Permission logic prevents unauthorized access
+Pagination works correctly
 
+Timeline: Days 6-9
+
+4) Mood Feature
+Owner: Moen (full ownership)
 Tasks:
-- Add centralized error handling and consistent response formats in `app/middleware/`.
-- Ensure request logging is present and useful for debugging.
+
+Complete CRUD endpoints in app/routes/mood.py
+Implement mood tracking model logic in app/models/mood.py
+Add aggregation endpoints for weekly/monthly mood stats
+Write tests for aggregation logic and edge cases (missing data, etc.)
 
 Acceptance criteria:
-- Clear logs, consistent API responses for success and failure.
 
-### 6) Tests, CI, Linting
-**Owners:** Both (shared)
+Mood CRUD fully functional
+Aggregation endpoints return correct stats
+Tests cover happy path and edge cases
 
+Timeline: Days 5-9 (starts after DB is stable)
+
+5) Error Handling & Middleware
+Split ownership:
+
+Kiptoo: Auth middleware (app/middleware/auth.py)
+Moen: Error handling middleware (app/middleware/errors.py)
+
+Tasks (Moen):
+
+Centralized error handler for common HTTP errors (400, 401, 404, 500)
+Consistent JSON response format: {"error": "message", "code": 400}
+Request logging middleware (log method, path, status, duration)
+
+Acceptance criteria:
+
+All errors return consistent JSON format
+Logs are clear and useful for debugging
+No stack traces leaked to client in production
+
+Timeline: Days 5-7
+
+6) Dashboard & Aggregations
+Owner: Kiptoo (moved from Moen)
+Rationale: Kiptoo knows journals intimately; can build dashboard after journals are complete.
 Tasks:
-- Add unit and integration tests under `tests/` (create if missing).
-- Configure CI (GitHub Actions or similar) to run tests and linters on PRs.
-- Add linting configs: `flake8`, `black`, `isort`, or preferred tools.
+
+Implement app/routes/dashboard.py to aggregate:
+
+Recent journals count
+Mood trends (calls Moen's mood aggregation endpoints)
+User activity stats
+
+
+Optimize queries (use JOINs, avoid N+1)
+Add simple caching if needed (Flask-Caching)
 
 Acceptance criteria:
-- CI passes on PRs; tests cover key flows.
 
-### 7) Documentation & Onboarding
-**Owner:** Kiptoo (primary doc author), Moen (review)
+Dashboard returns data within 500ms in dev
+Integrates cleanly with journals and mood endpoints
 
+Timeline: Days 10-11
+
+7) Tests & CI
+Owners: Both (shared equally)
 Tasks:
-- Update `README.md` with setup steps (env vars, DB setup, migrations).
-- Keep `settingup.txt` accurate and add example API requests.
+
+Create test structure under tests/ (test_auth.py, test_journals.py, test_mood.py)
+Each developer writes tests for their own features
+Kiptoo: Set up GitHub Actions CI workflow
+Moen: Add linting config (flake8, black, isort)
+Both: Ensure CI runs tests and linters on all PRs
 
 Acceptance criteria:
-- New dev can run the app and migrations using the documented steps.
 
----
+CI passes on all PRs
+Test coverage >70% on critical paths
+Linting enforced automatically
 
-## Milestones & Suggested Timeline (2-week sprint)
-- Day 1-2: Setup local dev env, align on branching and PR process, fix linting issues.
-- Day 3-6: Core auth flows (Kiptoo) and DB/model fixes + migrations (Moen).
-- Day 7-10: Journals endpoints (Kiptoo), Mood & Dashboard (Moen).
-- Day 11-12: Tests, CI, docs.
-- Day 13-14: Bug fixes, cross-review, merge, retrospective.
+Timeline: Days 10-12 (ongoing)
 
----
+8) Documentation
+Owner: Kiptoo (primary), Moen (review and contributions)
+Tasks:
 
-## Integration & Handoff Points
-- Auth tokens: agreed format and header: `Authorization: Bearer <token>`.
-- DB migrations: test migrations on a safe dev DB before merging.
-- Shared utilities: add `app/utils/` for helpers to avoid duplication.
+Update README.md with:
 
----
+Setup steps (virtualenv, dependencies, DB)
+Environment variables (.env.example)
+Running migrations
+Running the app
+Running tests
 
-## PR & Review Checklist
-- Small, focused PR.
-- Includes tests (happy path + one edge case).
-- Adds/updates migrations if models changed.
-- Updates docs as needed.
-- Reviewer: the other dev.
 
----
+Update settingup.txt with example API requests (curl or Postman)
+Add JWT flow explanation for team reference
 
-## File ownership quick reference
-- `app/middleware/auth.py` — Kiptoo
-- `app/routes/auth.py` — Kiptoo
-- `app/db.py` — Moen
-- `app/models/user.py` — Moen
-- `app/models/journal.py` — Kiptoo
-- `app/models/mood.py` — Moen
-- `app/routes/journals.py` — Kiptoo
-- `app/routes/mood.py` — Moen
-- `app/routes/dashboard.py` — Moen
-- `migrations/` — Moen manages migration approval
+Acceptance criteria:
 
----
+New developer can set up and run the app using docs alone
+All endpoints documented with example requests
 
-## Next steps
-- Create issues for each major task and assign owners.
-- Start feature branches and open PRs for incremental work.
+Timeline: Days 12-13
 
----
+Revised Timeline (3-week sprint with buffer)
+Week 1: Foundation
 
-*If you want, I can: create the GitHub issues from this doc, add a PR template, or update the repo `README.md` with a short excerpt.*
+Days 1-2: Environment setup, branching strategy, linting
+Days 3-5:
+
+Kiptoo: JWT auth implementation
+Moen: Database setup and models
+
+
+
+Week 2: Core Features
+
+Days 6-9:
+
+Kiptoo: Journals endpoints (after auth is done)
+Moen: Mood endpoints and aggregations (after DB is done)
+
+
+Days 10:
+
+Both: Start writing tests for their features
+
+
+
+Week 3: Integration & Polish
+
+Days 11-12:
+
+Kiptoo: Dashboard implementation
+Moen: Error handling refinement
+Both: Complete test coverage
+
+
+Days 13-14:
+
+CI setup (Kiptoo)
+Documentation (Kiptoo primary, Moen review)
+
+
+Day 15: Buffer for bug fixes, cross-review, final testing
+
+
+Integration & Handoff Points
+Auth → All features
+
+Kiptoo completes auth by Day 5
+Provides Moen with:
+
+@jwt_required decorator usage examples
+get_jwt_identity() helper documentation
+Test user tokens for development
+
+
+
+DB → Features
+
+Moen completes models by Day 4
+Both developers can start building on stable DB schema
+
+Mood → Dashboard
+
+Moen's mood aggregation endpoints must be done by Day 10
+Kiptoo calls these endpoints from dashboard
+
+
+Workload Balance Check
+Kiptoo (~ 55% of backend work)
+
+✅ Auth & JWT (complex, security-critical) — 5 days
+✅ Journals CRUD — 4 days
+✅ Dashboard — 2 days
+✅ CI setup — 1 day
+✅ Documentation (primary) — 2 days
+Total: ~14 days of work
+
+Moen (~ 45% of backend work)
+
+✅ Database & Models — 4 days
+✅ Mood CRUD + aggregations — 5 days
+✅ Error handling middleware — 2 days
+✅ Linting setup — 1 day
+✅ Documentation (review/contribute) — 1 day
+Total: ~13 days of work
+
+Balance: Much better! Moen avoids JWT complexity and focuses on data layer expertise.
+
+PR & Review Checklist
+
+ Small, focused PR (<300 lines)
+ Includes tests (happy path + edge case)
+ Adds/updates migrations if models changed
+ Updates docs if API changed
+ Assigned to other developer for review
+ CI passes (tests + linting)
+
+
+File ownership quick reference
+FilePrimary OwnerBackupapp/middleware/auth.pyKiptoo—app/middleware/errors.pyMoenKiptooapp/routes/auth.pyKiptoo—app/routes/journals.pyKiptooMoenapp/routes/mood.pyMoenKiptooapp/routes/dashboard.pyKiptooMoenapp/db.pyMoenKiptooapp/models/user.pyMoenKiptooapp/models/journal.pyKiptooMoenapp/models/mood.pyMoenKiptoomigrations/MoenKiptoo
+
+Key Changes from Original Plan
+
+JWT isolation: Kiptoo owns all JWT logic; Moen uses it as a dependency
+Dashboard moved to Kiptoo: Better fit since he owns journals
+Error handling to Moen: Balances workload and uses his backend expertise
+3-week sprint: Added buffer week for realistic delivery
+Clearer handoff points: Auth → Features, Mood → Dashboard
+More balanced workload: ~55/45 split vs original ~40/60
+
+
+Next Steps
+
+Create GitHub issues for each task with owner assignments
+Set up project board (To Do, In Progress, Review, Done)
+Schedule daily 15-min standups for blockers
+Kiptoo: Share JWT learning resources with Moen for future work
