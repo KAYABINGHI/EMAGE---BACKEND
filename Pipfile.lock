@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bd76f4a99f5144d5bcd7b2cd718d75be119c4f64be35d1b64bf864fd75775a2c"
+            "sha256": "3a0ea4b31ad080cc358bf67198c312658614f60f5ba14b1dbbed43250174288e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -152,6 +152,15 @@
             "index": "pypi",
             "markers": "python_version >= '3.6'",
             "version": "==4.1.0"
+        },
+        "flask-softdelete": {
+            "hashes": [
+                "sha256:b583fed61df85d513d45cbbe9c52ed3dbaa4e06266e055c1ade2bb071e7a7945",
+                "sha256:fb0e0a04eecc136a1e00e96fc61bde4ea8d02a1c12909ae8747885d0652d53d3"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.6'",
+            "version": "==2.1.0"
         },
         "flask-sqlalchemy": {
             "hashes": [
