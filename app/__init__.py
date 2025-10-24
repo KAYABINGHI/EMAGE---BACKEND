@@ -1,18 +1,8 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
-from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from app.config import Config
-
-# Initialize extensions
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
-bcrypt = Bcrypt()
-
-
+from app.auth.routes import bp
+from app.db import db,migrate,jwt,bcrypt
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -42,9 +32,26 @@ def create_app():
         # Migration autogenerate will only include models that were importable.
         pass
 
+    app.register_blueprint(bp)
+
     @app.route("/")
     def home():
         # Minimal root route used for health-check / welcome message
         return {"message": "Welcome to the Student Management System"}, 200
+    @app.route('/test')
+    def test():
+        return {"message": "Test route works!"}, 200
+
+    # Also add this to see all registered routes
+    @app.route('/routes')
+    def list_routes():
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'path': str(rule.rule)
+            })
+        return {"routes": routes}, 200
 
     return app

@@ -1,7 +1,6 @@
-from app import db, bcrypt
+from app.db import db, bcrypt
 from datetime import datetime
 from flask_softdelete import SoftDeleteMixin
-
 
 class User(db.Model, SoftDeleteMixin):
     __tablename__ = 'user'
@@ -10,8 +9,7 @@ class User(db.Model, SoftDeleteMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     phone_number = db.Column(db.String(20), unique=True, nullable=True)
-    password_hash = db.Column(db.String(128), nullable=False)
-    confirm_password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     is_verified = db.Column(db.Boolean, default=False)
     profile_image = db.Column(db.String(200), nullable=True)
     role = db.Column(db.String(50), default='user')
@@ -21,7 +19,19 @@ class User(db.Model, SoftDeleteMixin):
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        self.confirm_password_hash= bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password,self.confirm_password_hash,password)
+        return bcrypt.check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'phone_number': self.phone_number,
+            'is_verified': self.is_verified,
+            'profile_image': self.profile_image,
+            'role': self.role,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
