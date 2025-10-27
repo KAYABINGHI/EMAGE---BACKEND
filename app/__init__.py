@@ -4,6 +4,7 @@ from flask_cors import CORS
 from app.config import Config
 from app.auth.routes import bp as auth_bp
 from app.mood.routes import mood_bp
+from app.journals import journals_bp
 from app.db import db, migrate, jwt, bcrypt
 
 
@@ -21,6 +22,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(mood_bp)
+    app.register_blueprint(journals_bp)
 
     # Import models for migrations
     register_models()
