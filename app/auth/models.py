@@ -13,9 +13,10 @@ class User(db.Model, SoftDeleteMixin):
     is_verified = db.Column(db.Boolean, default=False)
     profile_image = db.Column(db.String(200), nullable=True)
     role = db.Column(db.String(50), default='user')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     deleted_at = db.Column(db.DateTime, nullable=True)
+
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
