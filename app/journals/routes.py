@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from app import db
+from app.db import db
 from app.journals.models import Journal
 from app.journals import journals_bp
 
@@ -25,15 +25,16 @@ def get_entry(id):
 def create_entry():
     data = request.get_json() or {}
 
+    # Basic validation
     if not data.get('title') or not data.get('content'):
         return jsonify({'message': 'Title and content are required'}), 400
 
     try:
         new_entry = Journal(
-            user_id=data.get('user_id', 1),  # Replace 1 with auth logic later
+            user_id=data.get('user_id', 1),  # 👈 replace with auth later
             title=data['title'],
             content=data['content'],
-            mood=data.get('mood'),
+            mood_id=data.get('mood_id'),
             is_private=data.get('is_private', False)
         )
         db.session.add(new_entry)
@@ -45,8 +46,9 @@ def create_entry():
         return jsonify({'message': 'Error creating journal entry', 'error': str(e)}), 500
 
 
+
 # Update a journal entry
-@journals_bp.route('/<int:id>', methods=['PUT'])
+@journals_bp.route('/<int:id>', methods=['PUT', 'PATCH'])
 def update_entry(id):
     entry = Journal.query.get(id)
     if not entry:
@@ -54,9 +56,10 @@ def update_entry(id):
 
     data = request.get_json() or {}
 
+    # Update only provided fields
     entry.title = data.get('title', entry.title)
     entry.content = data.get('content', entry.content)
-    entry.mood = data.get('mood', entry.mood)
+    entry.mood_id = data.get('mood_id', entry.mood_id)
     entry.is_private = data.get('is_private', entry.is_private)
 
     try:
@@ -65,6 +68,7 @@ def update_entry(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating journal entry', 'error': str(e)}), 500
+
 
 
 # Delete a journal entry

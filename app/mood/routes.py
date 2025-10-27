@@ -24,3 +24,8 @@ def add_mood():
         'mood': new_mood.to_dict(),
         'message': message
     }), 201
+
+#mood listings/mood logs
+@mood_bp.route('/mood/<int:id>', methods=['GET'])
+def get_mood(id):
+    pass
