@@ -204,3 +204,8 @@ class Journal(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+from flask import Blueprint
+
+journals_bp = Blueprint('journals', __name__, url_prefix="/journals")
+
+from app.journals import routes  # Import routes after blueprint creation
