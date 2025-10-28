@@ -1,6 +1,9 @@
 # app/models/journal.py
 from app.db import db
 from datetime import datetime
+from flask import Blueprint
+
+journals_bp = Blueprint('journals', __name__, url_prefix="/journals")
 
 class Journal(db.Model):
     __tablename__ = 'journal_entries'

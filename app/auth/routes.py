@@ -20,6 +20,7 @@ def register():
         'phone_number',
         'password',
         'confirm_password'
+        
     ]
     
     # Check if all required fields are present
@@ -69,7 +70,15 @@ def register():
         return jsonify({
             'message': 'User registered successfully',
             'access_token': access_token,
-            'user': user.to_dict()
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'phone_number': user.phone_number,
+            'is_verified': user.is_verified,
+            'profile_image': user.profile_image,
+            'role': user.role,          
+            'created_at': user.created_at
+  
         }), 201
 
     except Exception as e:
