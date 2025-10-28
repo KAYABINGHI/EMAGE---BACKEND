@@ -1,163 +1,168 @@
-from flask import request, jsonify
-from flask_bcrypt import check_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.auth.models import User
-from datetime import timedelta
-from app.db import bcrypt,db
-from flask import Blueprint
+from flask import Blueprint, request, jsonify
+from app import db
+from app.auth.models import User, Therapist
+from datetime import datetime, timedelta
+import secrets
 
-auth_bp = Blueprint('auth', __name__,url_prefix="/auth")
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-
-@auth_bp .route('/register', methods=['POST'])
+# =====================================
+# REGISTER (User or Therapist)
+# =====================================
+@auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json() or {}
+    data = request.get_json()
 
-    # Validate required fields
-    required_fields = [
-        'username',
-        'email',
-        'phone_number',
-        'password',
-        'confirm_password'
-        
-    ]
-    
-    # Check if all required fields are present
-    missing_fields = [field for field in required_fields if field not in data or not data[field]]
-    if missing_fields:
-        return jsonify({
-            'message': f'Missing required fields: {", ".join(missing_fields)}'
-        }), 400
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    role = data.get('role', 'user')
+    phone_number = data.get('phone_number')
+    profile_image = data.get('profile_image')
 
-    # Check if user already exists
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({
-            'message': 'Username already exists'
-        }), 400
+    # Validation
+    if not username or not email or not password:
+        return jsonify({'message': 'Username, email, and password are required'}), 400
 
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({
-            'message': 'Email already exists'
-        }), 400
+    if User.query.filter((User.email == email) | (User.username == username)).first():
+        return jsonify({'message': 'Username or Email already exists'}), 400
 
-    if User.query.filter_by(phone_number=data['phone_number']).first():
-        return jsonify({
-            'message': 'Phone number already exists'
-        }), 400
+    # Create base user
+    user = User(
+        username=username,
+        email=email,
+        phone_number=phone_number,
+        role=role,
+        profile_image=profile_image
+    )
+    user.set_password(password)
 
-    # Check password confirmation
-    if data.get('password') != data.get('confirm_password'):
-        return jsonify({'message': 'Password and confirm_password do not match'}), 400
+    db.session.add(user)
+    db.session.flush()  # So we can get user.id before committing
 
-    try:
-        # Create new user
-        user = User(
-            username=data['username'],
-            email=data['email'],
-            phone_number=data['phone_number']
+    # If therapist, create therapist profile
+    if role == 'therapist':
+        specialty = data.get('specialty')
+        contact_email = data.get('contact_email')
+
+        if not specialty:
+            return jsonify({'message': 'Specialty is required for therapists'}), 400
+
+        therapist = Therapist(
+            user_id=user.id,
+            specialty=specialty,
+            contact_email=contact_email,
+            phone_number=phone_number,
+            profile_image=profile_image
         )
+        db.session.add(therapist)
 
-        # Set password using bcrypt hashing
-        user.set_password(data['password'])
+    db.session.commit()
 
-        db.session.add(user)
-        db.session.commit()
-
-        # Create access token
-        access_token = create_access_token(identity=str(user.id))
-
-        return jsonify({
-            'message': 'User registered successfully',
-            'access_token': access_token,
+    return jsonify({
+        'message': 'Registration successful',
+        'user': {
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'phone_number': user.phone_number,
-            'is_verified': user.is_verified,
-            'profile_image': user.profile_image,
-            'role': user.role,          
+            'role': user.role,
             'created_at': user.created_at
-  
-        }), 201
+        }
+    }), 201
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'message': f'Error creating user: {str(e)}'
-        }), 500
 
-@auth_bp .route('/login', methods=['POST'])
+# =====================================
+# LOGIN
+# =====================================
+@auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json() or {}
+    data = request.get_json()
 
-    required_fields = ['email', 'password']
-    missing_fields = [f for f in required_fields if f not in data or not data[f]]
+    email = data.get('email')
+    password = data.get('password')
 
-    if missing_fields:
-        return jsonify({'message': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+    if not email or not password:
+        return jsonify({'message': 'Email and password are required'}), 400
 
-    user = User.query.filter_by(email=data['email']).first()
-    if not user:
-        return jsonify({'message': 'Email does not exist'}), 404
+    user = User.query.filter_by(email=email).first()
+    if not user or not user.check_password(password):
+        return jsonify({'message': 'Invalid email or password'}), 401
 
-    # Check password (using your model method)
-    if not user.check_password(data['password']):
-        return jsonify({'message': 'Invalid password'}), 401
-
-    access_token = create_access_token(identity=str(user.id))
+    # Include therapist info if applicable
+    therapist_data = None
+    if user.role == 'therapist' and user.therapist_profile:
+        therapist = user.therapist_profile
+        therapist_data = {
+            'id': therapist.id,
+            'specialty': therapist.specialty,
+            'bio': therapist.bio,
+            'verified': therapist.verified
+        }
 
     return jsonify({
         'message': 'Login successful',
-        'access_token': access_token,
-        'user': user.to_dict()
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'therapist': therapist_data
+        }
     }), 200
 
 
-@auth_bp .route('/forgot-password', methods=['POST'])
+# =====================================
+# FORGOT PASSWORD
+# =====================================
+@auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
-    data = request.get_json() or {}
+    data = request.get_json()
+    email = data.get('email')
 
-    # Check if email is provided
-    if 'email' not in data or not data['email']:
+    if not email:
         return jsonify({'message': 'Email is required'}), 400
 
-    user = User.query.filter_by(email=data['email']).first()
-    if not user:
-        return jsonify({'message': 'Email does not exist'}), 404
-
-    # Create short-lived reset token (valid for 15 minutes)
-    reset_token = create_access_token(
-        identity=str(user.id),
-        expires_delta=timedelta(minutes=15)
-    )
-
-    # Normally, you'd send this link via email
-    reset_link = f"http://127.0.0.1:5000/reset-password?token={reset_token}"
-
-    # For testing, we’ll return the link in the response
-    return jsonify({
-        'message': 'Password reset link generated successfully',
-        'reset_link': reset_link,
-        'token': reset_token
-    }), 200
-
-@auth_bp .route('/reset-password', methods=['POST'])
-@jwt_required()
-def reset_password():
-    data = request.get_json() or {}
-
-    if 'new_password' not in data or not data['new_password']:
-        return jsonify({'message': 'New password is required'}), 400
-
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-
+    user = User.query.filter_by(email=email).first()
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    # Use your model’s password setter
-    user.set_password(data['password'])
+    user.reset_token = secrets.token_urlsafe(32)
+    user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
     db.session.commit()
 
-    return jsonify({'message': 'Password reset successfully'}), 200
+    # In production: email the reset token instead
+    return jsonify({
+        'message': 'Reset token generated successfully',
+        'reset_token': user.reset_token
+    }), 200
+
+
+# =====================================
+# RESET PASSWORD
+# =====================================
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    token = data.get('token')
+    password = data.get('password')
+    confirm_password = data.get('confirm_password')
+
+    if not token or not password or not confirm_password:
+        return jsonify({'message': 'All fields are required'}), 400
+
+    if password != confirm_password:
+        return jsonify({'message': 'Passwords do not match'}), 400
+
+    user = User.query.filter_by(reset_token=token).first()
+    if not user:
+        return jsonify({'message': 'Invalid token'}), 400
+
+    if user.reset_token_expires < datetime.utcnow():
+        return jsonify({'message': 'Reset token has expired'}), 400
+
+    user.set_password(password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    db.session.commit()
+
+    return jsonify({'message': 'Password reset successful'}), 200
