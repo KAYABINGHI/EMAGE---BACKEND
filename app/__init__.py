@@ -23,6 +23,21 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(mood_bp)
     app.register_blueprint(journals_bp)
+    # Register community blueprint (routes define the blueprint)
+    try:
+        from app.community.routes import community_bp
+        app.register_blueprint(community_bp)
+    except Exception:
+        # If community routes aren't present or error on import, skip registration
+        pass
+
+    # Register community blueprint via its init helper to avoid circular imports
+    try:
+        from app.community import init_app as init_community
+        init_community(app)
+    except Exception:
+        # if community package isn't available or import fails, continue silently
+        pass
 
     # Import models for migrations
     register_models()
