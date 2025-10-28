@@ -21,7 +21,10 @@ def add_mood():
     message = get_mood_message(new_mood.emotion_label)
     
     return jsonify({
-        'mood': new_mood.to_dict(),
+        'id': new_mood.id,
+        'user_id': new_mood.user_id,
+        'emotion_label': new_mood.emotion_label,
+        'created_at': new_mood.created_at,
         'message': message
     }), 201
 
