@@ -1,15 +1,13 @@
 # app/models/journal.py
 from app.db import db
 from datetime import datetime
-from flask import Blueprint
 
-journals_bp = Blueprint('journals', __name__, url_prefix="/journals")
 
 class Journal(db.Model):
     __tablename__ = 'journal_entries'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
     mood_id = db.Column(db.Integer, db.ForeignKey('moods.id'), nullable=True)

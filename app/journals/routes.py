@@ -1,7 +1,9 @@
 from flask import request, jsonify
 from app.db import db
 from app.journals.models import Journal
-from app.journals import journals_bp
+from flask import Blueprint
+
+journals_bp = Blueprint('journals', __name__, url_prefix="/journals")
 
 
 # Get all journal entries

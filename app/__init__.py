@@ -2,10 +2,10 @@ from flask import Flask
 from flask_cors import CORS
 # from app.journals.routes import journal_bp  
 from app.config import Config
+from app.db import db, migrate, jwt, bcrypt
 from app.auth.routes import auth_bp
 from app.mood.routes import mood_bp
-from app.journals.models import journals_bp
-from app.db import db, migrate, jwt, bcrypt
+from app.journals.routes import journals_bp
 
 
 def create_app():
