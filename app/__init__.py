@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
-
+from app.journals.routes import journal_bp  
 from app.config import Config
-from app.auth.routes import bp as auth_bp
+from app.auth.routes import auth_bp
 from app.mood.routes import mood_bp
 from app.db import db, migrate, jwt, bcrypt
 
@@ -21,6 +21,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(mood_bp)
+    app.register_blueprint(journal_bp)
 
     # Import models for migrations
     register_models()
@@ -45,7 +46,7 @@ def register_models():
 def add_routes(app):
     @app.route("/")
     def home():
-        return {"message": "Welcome to the Student Management System"}, 200
+        return {"message": "Welcome to EMAGE home of emotional awereness"}, 200
 
     @app.route('/test')
     def test():

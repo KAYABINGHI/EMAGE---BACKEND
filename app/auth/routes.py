@@ -6,10 +6,10 @@ from datetime import timedelta
 from app.db import bcrypt,db
 from flask import Blueprint
 
-bp = Blueprint('auth', __name__,url_prefix="/auth")
+auth_bp = Blueprint('auth', __name__,url_prefix="/auth")
 
 
-@bp.route('/register', methods=['POST'])
+@auth_bp .route('/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
 
@@ -78,7 +78,7 @@ def register():
             'message': f'Error creating user: {str(e)}'
         }), 500
 
-@bp.route('/login', methods=['POST'])
+@auth_bp .route('/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
 
@@ -105,7 +105,7 @@ def login():
     }), 200
 
 
-@bp.route('/forgot-password', methods=['POST'])
+@auth_bp .route('/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json() or {}
 
@@ -133,7 +133,7 @@ def forgot_password():
         'token': reset_token
     }), 200
 
-@bp.route('/reset-password', methods=['POST'])
+@auth_bp .route('/reset-password', methods=['POST'])
 @jwt_required()
 def reset_password():
     data = request.get_json() or {}

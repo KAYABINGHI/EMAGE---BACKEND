@@ -9,7 +9,7 @@ class Mood(db.Model):
     emotion_label = db.Column(db.String(50), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
-    user = db.relationship('User', backref=db.backref('moods', lazy=True))  # Add this line
+    user = db.relationship('User', backref=db.backref('moods', lazy=True))  
     
     
     def to_dict(self):
