@@ -21,7 +21,7 @@ def get_entry(id):
 
 
 # Create a new journal entry
-@journals_bp.route('/', methods=['POST'])
+@journals_bp.route('/add_journal', methods=['POST'])
 def create_entry():
     data = request.get_json() or {}
 
@@ -31,7 +31,7 @@ def create_entry():
 
     try:
         new_entry = Journal(
-            user_id=data.get('user_id', 1),  # 👈 replace with auth later
+            user_id=data.get('user_id', 1),  
             title=data['title'],
             content=data['content'],
             mood_id=data.get('mood_id'),
@@ -39,7 +39,16 @@ def create_entry():
         )
         db.session.add(new_entry)
         db.session.commit()
-        return jsonify(new_entry.to_dict()), 201
+        return jsonify({
+            'id': new_entry.id,
+            'user_id': new_entry.user_id,
+            'title': new_entry.title,
+            'content': new_entry.content,
+            'mood': new_entry.mood.emotion_label,
+            'is_private': new_entry.is_private,
+            'created_at': new_entry.created_at.strftime("%a, %b %d, %Y"),
+            'updated_at': new_entry.updated_at.strftime("%a, %b %d, %Y")
+            }), 201
 
     except Exception as e:
         db.session.rollback()
@@ -64,7 +73,16 @@ def update_entry(id):
 
     try:
         db.session.commit()
-        return jsonify(entry.to_dict()), 200
+        return jsonify({
+            'id': entry.id,
+            'user_id': entry.user_id,
+            'title': entry.title,
+            'content': entry.content,
+            'mood': entry.mood.emotion_label,
+            'is_private': entry.is_private,
+            'created_at': entry.created_at.strftime("%a, %b %d, %Y"),
+            'updated_at': entry.updated_at.strftime("%a, %b %d, %Y")
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error updating journal entry', 'error': str(e)}), 500

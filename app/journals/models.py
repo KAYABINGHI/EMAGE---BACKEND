@@ -21,14 +21,4 @@ class Journal(db.Model):
     user = db.relationship('User', backref=db.backref('journals', lazy=True))
     mood = db.relationship('Mood', backref=db.backref('journals', lazy=True))
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'title': self.title,
-            'content': self.content,
-            'mood': self.mood.emotion_label if self.mood else None,
-            'is_private': self.is_private,
-            'created_at': self.created_at.strftime("%a, %b %d, %Y"),
-            'updated_at': self.updated_at.strftime("%a, %b %d, %Y") if self.updated_at else None
-        }
+    
