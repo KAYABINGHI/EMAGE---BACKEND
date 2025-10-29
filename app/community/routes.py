@@ -1,6 +1,7 @@
 # app/community/routes.py
 from flask import Blueprint, request, jsonify
 from app.db import db
+from datetime import datetime
 from app.community.models import (
     Community, CommunityMembership, CommunityMessage,
     DirectMessage, Connection
@@ -64,7 +65,7 @@ def create_community():
 # 3. Join Community
 @community_bp.route('/<int:community_id>/join', methods=['POST'])
 def join_community(community_id):
-    data = request.get_json() or {}
+    data = request.get_json() 
     user_id = data.get('user_id')
 
     if not user_id:

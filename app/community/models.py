@@ -22,15 +22,13 @@ class CommunityMembership(db.Model):
     __tablename__ = 'community_memberships'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    community_id = db.Column(db.Integer, db.ForeignKey('communities.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    community_id = db.Column(db.Integer, db.ForeignKey('communities.id'), nullable=False, unique=True)
     role = db.Column(db.String(50), default='member')  # owner, admin, member
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationship to user
     user = db.relationship('User', backref='community_memberships')
-
-    __table_args__ = (db.UniqueConstraint('user_id', 'community_id', name='unique_user_community'),)
 
 
 class CommunityMessage(db.Model):
