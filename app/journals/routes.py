@@ -13,15 +13,6 @@ def get_entries():
     return jsonify([entry.to_dict() for entry in entries]), 200
 
 
-# Get single journal entry by ID
-@journals_bp.route('/<int:id>', methods=['GET'])
-def get_entry(id):
-    entry = Journal.query.get(id)
-    if not entry:
-        return jsonify({'message': 'Journal entry not found'}), 404
-    return jsonify(entry.to_dict()), 200
-
-
 # Create a new journal entry
 @journals_bp.route('/add_journal', methods=['POST'])
 def create_entry():
@@ -59,7 +50,7 @@ def create_entry():
 
 
 # Update a journal entry
-@journals_bp.route('/<int:id>', methods=['PUT', 'PATCH'])
+@journals_bp.route('/update/<int:id>', methods=['PUT', 'PATCH'])
 def update_entry(id):
     entry = Journal.query.get(id)
     if not entry:
@@ -92,7 +83,7 @@ def update_entry(id):
 
 
 # Delete a journal entry
-@journals_bp.route('/<int:id>', methods=['DELETE'])
+@journals_bp.route('/delete/<int:id>', methods=['DELETE'])
 def delete_entry(id):
     entry = Journal.query.get(id)
     if not entry:

@@ -28,7 +28,19 @@ def add_mood():
         'message': message
     }), 201
 
-#mood listings/mood logs
-@mood_bp.route('/mood/<int:id>', methods=['GET'])
-def get_mood(id):
-    pass
+# Get mood logs for a user
+@mood_bp.route('/<int:user_id>', methods=['GET'])
+def get_mood(user_id):
+    moods = Mood.query.filter_by(user_id=user_id).order_by(Mood.created_at.desc()).all()
+    
+    if not moods:
+        return jsonify({'message': 'No mood entries found', 'moods': []}), 200
+    
+    mood_list = [{
+        'id': mood.id,
+        'user_id': mood.user_id,
+        'emotion_label': mood.emotion_label,
+        'created_at': mood.created_at.isoformat() if mood.created_at else None
+    } for mood in moods]
+    
+    return jsonify({'moods': mood_list, 'count': len(mood_list)}), 200
