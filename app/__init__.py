@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+import os
 # from app.journals.routes import journal_bp  
 from app.config import Config
 from app.db import db, migrate, jwt, bcrypt
@@ -17,7 +18,14 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    CORS(app)
+
+    # Configure CORS
+    # When requests from the frontend include credentials (cookies/auth headers)
+    # the server must set Access-Control-Allow-Credentials: true and must not
+    # use a wildcard '*' origin. Use FRONTEND_URL env var or fall back to
+    # http://localhost:5174.
+    frontend_origin = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": frontend_origin}})
 
     # Register blueprints
     app.register_blueprint(auth_bp)
