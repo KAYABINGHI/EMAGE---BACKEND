@@ -31,13 +31,6 @@ def create_app():
         # If community routes aren't present or error on import, skip registration
         pass
 
-    # Register community blueprint via its init helper to avoid circular imports
-    try:
-        from app.community import init_app as init_community
-        init_community(app)
-    except Exception:
-        # if community package isn't available or import fails, continue silently
-        pass
 
     # Import models for migrations
     register_models()
@@ -51,10 +44,10 @@ def create_app():
 def register_models():
     #Import models for Flask-Migrate
     try:
-        from app.auth import models as auth_models  # noqa: F401
-        from app.community import models as community_models  # noqa: F401
-        from app.journals import models as journals_models  # noqa: F401
-        from app.mood import models as mood_models  # noqa: F401
+        from app.auth import models as auth_models  
+        from app.community import models as community_models
+        from app.journals import models as journals_models  
+        from app.mood import models as mood_models  
     except ImportError:
         pass
 
