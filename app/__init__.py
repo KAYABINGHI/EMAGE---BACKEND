@@ -11,6 +11,8 @@ from app.journals.routes import journals_bp
 
 def create_app():
     app = Flask(__name__)
+    # Allow routes without a trailing slash to be accepted without a redirect.
+    app.url_map.strict_slashes = False
     app.config.from_object(Config)
 
     # Initialize extensions
