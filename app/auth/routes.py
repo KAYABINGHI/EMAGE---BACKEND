@@ -3,8 +3,29 @@ from app import db
 from app.auth.models import User, Therapist
 from datetime import datetime, timedelta
 import secrets
+from functools import wraps
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity,
+    get_jwt,
+)
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+
+def admin_required(fn):
+    """Decorator to require JWT auth and admin role in JWT claims."""
+    @wraps(fn)
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        claims = get_jwt()
+        # Role should have been added to JWT during login
+        if claims.get('role') != 'admin':
+            return jsonify({'message': 'Admins only'}), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 # =====================================
 # REGISTER (User or Therapist)
@@ -99,8 +120,12 @@ def login():
             'verified': therapist.verified
         }
 
+    # Create a JWT access token that includes the user's role in claims.
+    access_token = create_access_token(identity=user.id, additional_claims={"role": user.role})
+
     return jsonify({
         'message': 'Login successful',
+        'access_token': access_token,
         'user': {
             'id': user.id,
             'username': user.username,
@@ -166,3 +191,119 @@ def reset_password():
     db.session.commit()
 
     return jsonify({'message': 'Password reset successful'}), 200
+
+
+# ================================
+# Admin-only endpoints
+# ================================
+
+
+@auth_bp.route('/admin/dashboard', methods=['GET'])
+@admin_required
+def admin_dashboard():
+    """Return simple statistics for admin dashboard."""
+    total_users = User.query.count()
+    total_therapists = Therapist.query.count()
+    pending_therapists = Therapist.query.filter_by(verified=False).count()
+
+    # Simple system health metric placeholder (could be extended)
+    system_health = '92%'
+
+    return jsonify({
+        'total_users': total_users,
+        'total_therapists': total_therapists,
+        'pending_therapists': pending_therapists,
+        'system_health': system_health
+    }), 200
+
+
+@auth_bp.route('/admin/users', methods=['GET'])
+@admin_required
+def admin_list_users():
+    """List users with optional pagination (admin only)."""
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 50))
+    pagination = User.query.order_by(User.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    users = [
+        {
+            'id': u.id,
+            'username': u.username,
+            'email': u.email,
+            'role': u.role,
+            'created_at': u.created_at
+        }
+        for u in pagination.items
+    ]
+    return jsonify({'users': users, 'total': pagination.total}), 200
+
+
+@auth_bp.route('/admin/users/<int:user_id>/promote', methods=['PUT'])
+@admin_required
+def admin_promote_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    user.promote_to_admin()
+    db.session.commit()
+    return jsonify({'message': 'User promoted to admin', 'user_id': user.id}), 200
+
+
+@auth_bp.route('/admin/users/<int:user_id>/demote', methods=['PUT'])
+@admin_required
+def admin_demote_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    user.demote_to_user()
+    db.session.commit()
+    return jsonify({'message': 'User demoted to user', 'user_id': user.id}), 200
+
+
+@auth_bp.route('/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'User deleted'}), 200
+
+
+@auth_bp.route('/admin/therapists', methods=['GET'])
+@admin_required
+def admin_list_therapists():
+    therapists = Therapist.query.order_by(Therapist.created_at.desc()).all()
+    items = [
+        {
+            'id': t.id,
+            'user_id': t.user_id,
+            'specialty': t.specialty,
+            'verified': t.verified,
+            'created_at': t.created_at
+        }
+        for t in therapists
+    ]
+    return jsonify({'therapists': items}), 200
+
+
+@auth_bp.route('/admin/therapists/<int:therapist_id>/verify', methods=['PUT'])
+@admin_required
+def admin_verify_therapist(therapist_id):
+    t = Therapist.query.get(therapist_id)
+    if not t:
+        return jsonify({'message': 'Therapist not found'}), 404
+    t.verified = True
+    db.session.commit()
+    return jsonify({'message': 'Therapist verified', 'therapist_id': t.id}), 200
+
+
+@auth_bp.route('/admin/therapists/<int:therapist_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_therapist(therapist_id):
+    t = Therapist.query.get(therapist_id)
+    if not t:
+        return jsonify({'message': 'Therapist not found'}), 404
+    db.session.delete(t)
+    db.session.commit()
+    return jsonify({'message': 'Therapist deleted'}), 200

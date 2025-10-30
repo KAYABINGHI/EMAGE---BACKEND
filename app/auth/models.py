@@ -27,6 +27,19 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_admin(self):
+        """Return True if the user has the 'admin' role."""
+        return (self.role or '').lower() == 'admin'
+
+    def promote_to_admin(self):
+        """Promote this user to admin role."""
+        self.role = 'admin'
+
+    def demote_to_user(self):
+        """Demote this user to a normal 'user' role."""
+        self.role = 'user'
+
 
 
 class Therapist(db.Model):
