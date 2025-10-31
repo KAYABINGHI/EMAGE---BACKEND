@@ -25,7 +25,6 @@ def create_app():
     # When requests from the frontend include credentials (cookies/auth headers)
     # the server must set Access-Control-Allow-Credentials: true and must not
     # use a wildcard '*' origin. Use FRONTEND_URL env var or fall back to
-    # http://localhost:5174.
     frontend_origin = os.getenv('FRONTEND_URL', 'http://localhost:5173')
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": frontend_origin}})
 
@@ -46,7 +45,7 @@ def create_app():
     register_models()
 
     # Add routes
-    add_routes(app)
+    # add_routes(app)
 
     return app
 
@@ -62,24 +61,16 @@ def register_models():
         pass
 
 
-def add_routes(app):
-    @app.route("/")
-    def home():
-        return {"message": "Welcome to EMAGE home of emotional awereness"}, 200
-
-    @app.route('/test')
-    def test():
-        return {"message": "Test route works!"}, 200
-
-    @app.route('/routes')
-    def list_routes():
-        return {
-            "routes": [
-                {
-                    'endpoint': rule.endpoint,
-                    'methods': list(rule.methods - {'HEAD', 'OPTIONS'}),
-                    'path': str(rule.rule)
-                }
-                for rule in app.url_map.iter_rules()
-            ]
-        }, 200
+# def add_routes(app):
+#     @app.route('/routes')
+#     def list_routes():
+#         return {
+#             "routes": [
+#                 {
+#                     'endpoint': rule.endpoint,
+#                     'methods': list(rule.methods - {'HEAD', 'OPTIONS'}),
+#                     'path': str(rule.rule)
+#                 }
+#                 for rule in app.url_map.iter_rules()
+#             ]
+#         }, 200
