@@ -25,8 +25,17 @@ def create_app():
     # When requests from the frontend include credentials (cookies/auth headers)
     # the server must set Access-Control-Allow-Credentials: true and must not
     # use a wildcard '*' origin. Use FRONTEND_URL env var or fall back to
-    frontend_origin = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": frontend_origin}})
+    frontend_origins = [
+        'https://emage-app.vercel.app',  # Your Vercel frontend
+        'http://localhost:5173',         # Vite dev server
+        'http://localhost:3000'          # Create React App dev server
+    ]
+    
+    CORS(app, 
+         supports_credentials=True, 
+         origins=frontend_origins,
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+         allow_headers=["Content-Type", "Authorization", "X-Requested-With"])
 
     # Register blueprints
     app.register_blueprint(auth_bp)
